@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Camera, CheckCircle, XCircle, MapPin, Clock, Upload, FileText } from "lucide-react"
@@ -14,6 +14,7 @@ export default function VerificationPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [cameraSupported, setCameraSupported] = useState(true)
+  const [stream, setStream] = useState<MediaStream | null>(null)
 
   // Check camera support on mount
   useEffect(() => {
@@ -133,112 +134,109 @@ export default function VerificationPage() {
     stopCamera()
   }
 
+  // Filter for pending and in_progress deliveries only
+  const pendingDeliveries = deliveries.filter(d => d.status === 'pending' || d.status === 'in_progress')
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-red-600">Delivery Verification</h2>
-        <p className="text-gray-600">
-          Capture photos with geolocation to confirm successful deliveries
-        </p>
-      </div>
-
-      {geoError && (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">
-          {geoError}
-          <Button
-            variant="link"
-            className="text-red-700 underline ml-2"
-            onClick={() => setGeoError(null)}
-          >
-            Dismiss
-          </Button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Delivery List */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle>Pending Deliveries</CardTitle>
-            <CardDescription>Select a delivery to confirm with images</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {deliveries.map((delivery) => (
-              <div
-                key={delivery.id}
-                onClick={() => {
-                  setSelectedDelivery(delivery)
-                  stopCamera()
-                }}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedDelivery?.id === delivery.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                } ${
-                  delivery.status === "delivered"
-                    ? "bg-green-50 border-green-200"
-                    : delivery.status === "failed"
-                    ? "bg-red-50 border-red-200"
-                    : ""
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{delivery.recipientName}</p>
-                    <p className="text-sm text-gray-500">ID: {delivery.deliveryId}</p>
-                    <p className="text-sm text-gray-600 mt-1">{delivery.address}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-blue-500" />
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        delivery.status === "delivered"
-                          ? "bg-green-100 text-green-700"
-                          : delivery.status === "failed"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {delivery.status}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {delivery.deliveryType}
-                  </span>
-                  {delivery.images.length > 0 && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {delivery.images.length} photo(s)
-                    </span>
-                  )}
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="grid grid-cols-1 lg:grid-cols-2 h-screen">
+        {/* Left Panel - Delivery List */}
+        <div className="bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Pending Deliveries</h2>
+            <p className="text-sm text-gray-600 mt-1">Select a delivery to confirm with images</p>
+          </div>
+          
+          <div className="p-4 space-y-3">
+            {pendingDeliveries.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-4xl mb-4">📦</div>
+                <p className="text-lg font-medium">No pending deliveries</p>
+                <p className="text-sm">All deliveries have been completed</p>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Capture Section */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle>
-              {selectedDelivery ? selectedDelivery.recipientName : "Select a Delivery"}
-            </CardTitle>
-            {selectedDelivery && (
-              <CardDescription>{selectedDelivery.address}</CardDescription>
+            ) : (
+              pendingDeliveries.map((delivery) => (
+                <div
+                  key={delivery.id}
+                  onClick={() => {
+                    setSelectedDelivery(delivery)
+                    stopCamera()
+                  }}
+                  className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
+                    selectedDelivery?.id === delivery.id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{delivery.recipientName}</h3>
+                      <p className="text-sm text-gray-500">ID: {delivery.deliveryId}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        delivery.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
+                        {delivery.status === "pending" ? "pending" : "in_progress"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-2">{delivery.address}</p>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {delivery.deliveryType}
+                    </span>
+                    {delivery.images.length > 0 && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        {delivery.images.length} photo(s)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
             )}
-          </CardHeader>
-          <CardContent>
-            {selectedDelivery ? (
-              <div className="space-y-4">
-                {/* Image Capture Area */}
-                <div className="grid grid-cols-3 gap-3">
+          </div>
+        </div>
+
+        {/* Right Panel - Capture Section */}
+        <div className="bg-gray-50 overflow-y-auto">
+          {selectedDelivery ? (
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">{selectedDelivery.recipientName}</h2>
+                <p className="text-sm text-gray-600">{selectedDelivery.address}</p>
+              </div>
+
+              {geoError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                  {geoError}
+                  <Button
+                    variant="link"
+                    className="text-red-700 underline ml-2 p-0 h-auto"
+                    onClick={() => setGeoError(null)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+
+              {/* Capture Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Capture 1</h3>
+                
+                {/* Image Capture Grid */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
                   {[0, 1, 2].map((index) => {
                     const file = selectedDelivery.images[index]
                     return (
                       <div
                         key={index}
-                        className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden"
+                        className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white overflow-hidden"
                       >
                         {file ? (
                           file.type === 'pdf' ? (
@@ -250,6 +248,8 @@ export default function VerificationPage() {
                               className="w-full h-full object-cover"
                             />
                           )
+                        ) : index === 0 ? (
+                          <Camera className="h-8 w-8 text-blue-500" />
                         ) : (
                           <Camera className="h-8 w-8 text-gray-400" />
                         )}
@@ -260,7 +260,7 @@ export default function VerificationPage() {
 
                 {/* Camera Preview */}
                 {capturing && (
-                  <div className="relative">
+                  <div className="relative mb-6">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -278,9 +278,13 @@ export default function VerificationPage() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex gap-3 mb-6">
                   {!capturing ? (
-                    <Button onClick={startCamera} className="bg-blue-600 hover:bg-blue-700" disabled={!cameraSupported}>
+                    <Button 
+                      onClick={startCamera} 
+                      className="bg-blue-600 hover:bg-blue-700" 
+                      disabled={!cameraSupported}
+                    >
                       <Camera className="h-4 w-4 mr-2" />
                       {cameraSupported ? 'Open Camera' : 'Camera Not Supported'}
                     </Button>
@@ -294,7 +298,7 @@ export default function VerificationPage() {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload File
+                    Upload Photo
                   </Button>
                   <input
                     ref={fileInputRef}
@@ -308,30 +312,30 @@ export default function VerificationPage() {
 
                 {/* GPS Info */}
                 {selectedDelivery.images.length > 0 && (
-                  <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                    <p className="font-medium mb-2">Last Capture Metadata:</p>
-                    <div className="grid grid-cols-2 gap-2 text-gray-600">
-                      <div className="flex items-center gap-1">
+                  <div className="bg-white border border-gray-200 p-4 rounded-lg mb-6">
+                    <p className="font-medium text-gray-900 mb-2">Last Capture Metadata:</p>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        Lat: {selectedDelivery.images[selectedDelivery.images.length - 1].latitude?.toFixed(6)}
+                        <span>Lat: {selectedDelivery.images[selectedDelivery.images.length - 1].latitude?.toFixed(6)}</span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        Lng: {selectedDelivery.images[selectedDelivery.images.length - 1].longitude?.toFixed(6)}
+                        <span>Lng: {selectedDelivery.images[selectedDelivery.images.length - 1].longitude?.toFixed(6)}</span>
                       </div>
-                      <div className="flex items-center gap-1 col-span-2">
+                      <div className="flex items-center gap-2 col-span-2">
                         <Clock className="h-4 w-4" />
-                        {selectedDelivery.images[selectedDelivery.images.length - 1].timestamp.toLocaleString()}
+                        <span>{selectedDelivery.images[selectedDelivery.images.length - 1].timestamp.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* Completion Buttons */}
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     onClick={() => markDeliveryStatus(selectedDelivery.id, "delivered")}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 text-white"
                     disabled={selectedDelivery.images.length === 0}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
@@ -340,21 +344,23 @@ export default function VerificationPage() {
                   <Button
                     onClick={() => markDeliveryStatus(selectedDelivery.id, "failed")}
                     variant="outline"
-                    className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Failed
                   </Button>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <Camera className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Select a delivery from the list to begin confirmation</p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-center text-gray-500">
+              <div>
+                <Camera className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">Select a delivery to begin confirmation</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

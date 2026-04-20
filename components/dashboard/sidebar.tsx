@@ -36,7 +36,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-[#0a1628] text-white min-h-screen transition-all duration-300",
+        "flex flex-col bg-[#0a1628] text-white min-h-screen transition-all duration-300 shrink-0",
         collapsed ? "w-16" : "w-64"
       )}
     >
