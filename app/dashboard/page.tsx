@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useDeliveries } from "@/lib/deliveries-context"
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 
 // Mock additional data for enhanced dashboard
 const mockPerformanceData = {
@@ -44,6 +44,19 @@ const mockTopLocations = [
 
 export default function DashboardPage() {
   const { deliveries } = useDeliveries()
+  const [currentTime, setCurrentTime] = useState<string>("")
+
+  // Update time on client side only
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleTimeString())
+    }
+    
+    updateTime() // Set initial time
+    const interval = setInterval(updateTime, 1000) // Update every second
+    
+    return () => clearInterval(interval)
+  }, [])
 
   const stats = useMemo(() => {
     const total = deliveries.length
@@ -94,7 +107,7 @@ export default function DashboardPage() {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Last updated</p>
-          <p className="text-sm font-medium">{new Date().toLocaleTimeString()}</p>
+          <p className="text-sm font-medium">{currentTime || "Loading..."}</p>
         </div>
       </div>
 
