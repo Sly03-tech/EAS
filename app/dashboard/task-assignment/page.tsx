@@ -202,7 +202,7 @@ export default function DeliveryAssignmentPage() {
                   <tr
                     key={delivery.id}
                     className={`border-b border-gray-100 hover:bg-gray-50 ${
-                      !delivery.lat ? "bg-yellow-50" : ""
+                      !delivery.latitude ? "bg-yellow-50" : ""
                     }`}
                   >
                     <td className="py-3 px-2">
@@ -211,13 +211,13 @@ export default function DeliveryAssignmentPage() {
                         onCheckedChange={() => toggleDelivery(delivery.id)}
                       />
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{delivery.id}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{delivery.recipient}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900">{delivery.deliveryId}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900">{delivery.recipientName}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{delivery.address}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.location}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.lat || "N/A"}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.lng || "N/A"}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.type}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.address}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.latitude || "N/A"}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.longitude || "N/A"}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{delivery.deliveryType}</td>
                     <td className="py-3 px-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                         {delivery.status}
